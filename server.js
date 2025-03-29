@@ -26,16 +26,18 @@ io.on("connection", (socket) => {
     console.log(`Room ${roomId} created`);
   }
 
-  if (rooms[roomId].players.length < 2) {
+  const maxPlayers = 6; // Allow up to 6 players in a room
+  if (rooms[roomId].players.length < maxPlayers) {
     rooms[roomId].players.push({ id: socket.id, name: playerName });
     socket.join(roomId);
-    console.log(`Player ${playerName} joined room ${roomId}`);  // Log when player joins
-    io.to(roomId).emit("player-joined", rooms[roomId].players);  // Emit the event to frontend
+    console.log(`Player ${playerName} joined room ${roomId}`);
+    io.to(roomId).emit("player-joined", rooms[roomId].players); // Notify players in the room
   } else {
-    socket.emit("room-full");
-    console.log(`Room ${roomId} is full, cannot join`);  // Log if room is full
+    socket.emit("room-full", { message: `Room is full. Max ${maxPlayers} players allowed.` });
+    console.log(`Room ${roomId} is full, cannot join`);
   }
 });
+
 
 
 
