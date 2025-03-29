@@ -19,19 +19,24 @@ io.on("connection", (socket) => {
   console.log("User connected:", socket.id);
 
   socket.on("join-room", ({ roomId, playerName }) => {
+  console.log(`Attempting to join room: ${roomId} with player: ${playerName}`); // Log for debugging
+
   if (!rooms[roomId]) {
     rooms[roomId] = { players: [] };
+    console.log(`Room ${roomId} created`);  // Log room creation
   }
 
   if (rooms[roomId].players.length < 2) {
     rooms[roomId].players.push({ id: socket.id, name: playerName });
     socket.join(roomId);
-    console.log(`Player joined: ${playerName}`);  // Log when a player joins
-    io.to(roomId).emit("player-joined", rooms[roomId].players);  // Emit the event to update the status
+    console.log(`Player ${playerName} joined room ${roomId}`);  // Log when player joins
+    io.to(roomId).emit("player-joined", rooms[roomId].players);
   } else {
     socket.emit("room-full");
+    console.log(`Room ${roomId} is full, cannot join`);  // Log if the room is full
   }
 });
+
 
 
   socket.on("tile-clicked", ({ roomId, tileIndex }) => {
