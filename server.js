@@ -22,6 +22,9 @@ io.on("connection", (socket) => {
   socket.on("join-room", ({ roomId, playerName }) => {
     console.log(`Attempting to join room: ${roomId} with player: ${playerName}`);
 
+    // Log current rooms to check if this room exists
+    console.log("Current rooms: ", Object.keys(rooms));
+
     // Check if room exists
     if (!rooms[roomId]) {
       socket.emit("room-error", "Password incorrect. Room does not exist.");
@@ -59,12 +62,16 @@ io.on("connection", (socket) => {
 
   // Player 1 creates a room and selects the number of tiles
   socket.on("create-room", ({ roomId, playerName, tileCount }) => {
+    // Check if the room already exists
+    console.log("Current rooms before creating new room: ", Object.keys(rooms));
+
     if (rooms[roomId]) {
       socket.emit("room-error", "Room already exists");
       console.log(`Room ${roomId} already exists`);
       return;
     }
 
+    // Create the new room
     rooms[roomId] = {
       player1: playerName,
       tileCount,
