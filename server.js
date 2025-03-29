@@ -19,18 +19,20 @@ io.on("connection", (socket) => {
   console.log("User connected:", socket.id);
 
   socket.on("join-room", ({ roomId, playerName }) => {
-    if (!rooms[roomId]) {
-      rooms[roomId] = { players: [] };
-    }
+  if (!rooms[roomId]) {
+    rooms[roomId] = { players: [] };
+  }
 
-    if (rooms[roomId].players.length < 2) {
-      rooms[roomId].players.push({ id: socket.id, name: playerName });
-      socket.join(roomId);
-      io.to(roomId).emit("player-joined", rooms[roomId].players);
-    } else {
-      socket.emit("room-full");
-    }
-  });
+  if (rooms[roomId].players.length < 2) {
+    rooms[roomId].players.push({ id: socket.id, name: playerName });
+    socket.join(roomId);
+    console.log(`Player joined: ${playerName}`);  // Log when a player joins
+    io.to(roomId).emit("player-joined", rooms[roomId].players);  // Emit the event to update the status
+  } else {
+    socket.emit("room-full");
+  }
+});
+
 
   socket.on("tile-clicked", ({ roomId, tileIndex }) => {
     socket.to(roomId).emit("update-click", tileIndex);
