@@ -33,9 +33,10 @@ io.on("connection", (socket) => {
     io.to(roomId).emit("player-joined", rooms[roomId].players);
   } else {
     socket.emit("room-full");
-    console.log(`Room ${roomId} is full, cannot join`);  // Log if the room is full
+    console.log(`Room ${roomId} is full, cannot join`);  // Log if room is full
   }
 });
+
 
 
 
