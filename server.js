@@ -13,7 +13,7 @@ const io = new Server(server, {
   },
 });
 
-const rooms = {};
+const rooms = {}; // Store rooms by password (room code)
 
 io.on("connection", (socket) => {
   console.log("User connected:", socket.id);
@@ -22,8 +22,9 @@ io.on("connection", (socket) => {
   socket.on("join-room", ({ roomId, playerName }) => {
     console.log(`Attempting to join room: ${roomId} with player: ${playerName}`);
 
+    // Check if room exists
     if (!rooms[roomId]) {
-      socket.emit("room-error", "Room does not exist");
+      socket.emit("room-error", "Password incorrect. Room does not exist.");
       console.log(`Room ${roomId} does not exist`);
       return;
     }
