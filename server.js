@@ -1,7 +1,9 @@
+// server/server.js
 const express = require("express");
 const http = require("http");
-const { Server } = require("socket.io");
 const cors = require("cors");
+const { Server } = require("socket.io");
+const seedrandom = require("seedrandom");
 
 const app = express();
 app.use(cors());
@@ -13,65 +15,168 @@ const io = new Server(server, {
   },
 });
 
+const pokemonList = [
+  "bulbasaur", "ivysaur", "venusaur", "charmander", "charmeleon", "charizard",
+  "squirtle", "wartortle", "blastoise", "pikachu", "raichu", "mew", "mewtwo", 
+  "eevee", "flareon", "vaporeon", "jolteon", "gengar", "onix", "snorlax"
+  // ✅ Feel free to add more!
+];
+
 const rooms = {};
 
-io.on("connection", (socket) => {
-  console.log("User connected:", socket.id);
+function shuffleAndDuplicate(arr, count, seed) {
+  const rng = seedrandom(seed);
+  const uniqueCount = count / 2;
+  const selection = arr.slice(0, uniqueCount);
+  const doubled = [...selection, ...selection];
 
-  // Create a new room
-  socket.on("create-room", ({ roomId, playerName }) => {
+  for (let i = doubled.length - 1; i > 0; i--) {
+    const j = Math.floor(rng() * (i + 1));
+    [doubled[i], doubled[j]] = [doubled[j], doubled[i]];
+  }
+
+  return doubled;
+}
+
+io.on("connection", (socket) => {
+  console.log("🟢 New connection:", socket.id);
+
+  socket.on("create-room", ({ roomId, password, playerName }) => {
     if (rooms[roomId]) {
-      socket.emit("room-error", "Room already exists");
-      console.log(`Room ${roomId} already exists`);
+      socket.emit("room-exists", roomId);
       return;
     }
 
+    const tiles = shuffleAndDuplicate(pokemonList, 100, roomId);
     rooms[roomId] = {
-      password: roomId, // Password = roomId for simplicity
-      players: [{ id: socket.id, name: playerName }],
-      isStarted: false,
+      password,
+      tiles,
+      matched: [],
+      scores: {},
+      players: [],
+      gameStarted: false,
     };
-    socket.join(roomId);
-    console.log(`Room ${roomId} created by ${playerName}`);
-    io.to(roomId).emit("room-created", { roomId, playerName });
+
+    joinRoom(socket, roomId, password, playerName);
   });
 
-  // Join an existing room
-  socket.on("join-room", ({ roomId, playerName }) => {
-    if (!rooms[roomId]) {
-      socket.emit("room-error", "Room does not exist");
-      console.log(`Room ${roomId} does not exist`);
-      return;
-    }
-
+  socket.on("join-room", ({ roomId, password, playerName }) => {
     const room = rooms[roomId];
-
-    if (room.players.some((p) => p.name === playerName)) {
-      socket.emit("room-error", "You are already in this room");
-      console.log(`${playerName} is already in room ${roomId}`);
+    if (!room) {
+      socket.emit("room-error", "Room does not exist.");
       return;
     }
 
-    const maxPlayers = 6;
-    if (room.players.length < maxPlayers) {
-      room.players.push({ id: socket.id, name: playerName });
-      socket.join(roomId);
-      console.log(`${playerName} joined room ${roomId}`);
-      io.to(roomId).emit("player-joined", room.players);
-    } else {
-      socket.emit("room-error", "Room is full");
-      console.log(`Room ${roomId} is full`);
+    if (room.password !== password) {
+      socket.emit("room-error", "Incorrect room password.");
+      return;
     }
+
+    joinRoom(socket, roomId, password, playerName);
+  });
+
+  function joinRoom(socket, roomId, password, playerName) {
+    const room = rooms[roomId];
+    if (room.players.find(p => p.name === playerName)) {
+      socket.emit("room-error", "That name is already taken.");
+      return;
+    }
+
+    const player = { id: socket.id, name: playerName };
+    room.players.push(player);
+    room.scores[playerName] = 0;
+    socket.join(roomId);
+
+    socket.emit("room-joined", {
+      roomId,
+      tiles: room.tiles,
+      scores: room.scores,
+    });
+
+    io.to(roomId).emit("player-list", room.players);
+  }
+
+  socket.on("start-game", ({ roomId }) => {
+    const room = rooms[roomId];
+    if (!room) return;
+
+    room.gameStarted = true;
+    io.to(roomId).emit("start-countdown");
+
+    setTimeout(() => {
+      io.to(roomId).emit("game-started", {
+        tiles: room.tiles,
+      });
+    }, 3000);
+  });
+
+  socket.on("tile-clicked", ({ roomId, tileIndex }) => {
+    socket.to(roomId).emit("update-click", tileIndex);
+  });
+
+socket.on("matched", ({ roomId, matchedIndices }) => {
+  const room = rooms[roomId];
+  if (!room) return;
+
+  const player = room.players.find(p => p.id === socket.id);
+  if (!player) return;
+
+  const playerName = player.name;
+
+  // Prevent duplicate matches
+  if (room.matched.includes(matchedIndices[0]) || room.matched.includes(matchedIndices[1])) return;
+
+  room.matched.push(...matchedIndices);
+  room.scores[playerName] += 1;
+
+  // 🔁 Broadcast matched tiles to all
+  io.to(roomId).emit("update-matches", matchedIndices);
+
+  // 🧠 Broadcast the full scores to ALL players (now accurate!)
+  io.to(roomId).emit("score-update", room.scores);
+
+  // 🎯 Check game over
+  const totalPairs = room.tiles.length / 2;
+  const matchedPairs = room.matched.length / 2;
+
+  if (matchedPairs >= totalPairs) {
+    const winner = Object.entries(room.scores).sort((a, b) => b[1] - a[1])[0][0];
+    io.to(roomId).emit("game-over", winner);
+  }
+});
+
+  socket.on("rematch", ({ roomId }) => {
+    const room = rooms[roomId];
+    if (!room) return;
+
+    const newTiles = shuffleAndDuplicate(pokemonList, 100, roomId + "_rematch");
+    room.tiles = newTiles;
+    room.matched = [];
+    room.scores = room.players.reduce((acc, p) => {
+      acc[p.name] = 0;
+      return acc;
+    }, {});
+    room.gameStarted = false;
+
+    io.to(roomId).emit("rematch-ready", {
+      tiles: newTiles,
+      scores: room.scores,
+    });
   });
 
   socket.on("disconnect", () => {
     for (const roomId in rooms) {
-      rooms[roomId].players = rooms[roomId].players.filter((p) => p.id !== socket.id);
-      if (rooms[roomId].players.length === 0) delete rooms[roomId];
+      const room = rooms[roomId];
+      const index = room.players.findIndex(p => p.id === socket.id);
+      if (index !== -1) {
+        const player = room.players.splice(index, 1)[0];
+        delete room.scores[player.name];
+        io.to(roomId).emit("player-list", room.players);
+      }
     }
-    console.log("User disconnected:", socket.id);
   });
 });
 
-const PORT = process.env.PORT || 4000;
-server.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+server.listen(4000, () => {
+  console.log("🚀 Pokematch Server running on port 4000");
+});
