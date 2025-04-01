@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import io from "socket.io-client";
 import "./App.css";
 
-const socket = io("http://localhost:4000");
+const socket = io("https://pokematch-server.onrender.com");
 
 const getImageUrl = (name) => `/images/${name}.png`;
 
