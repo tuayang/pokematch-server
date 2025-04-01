@@ -1,38 +1,257 @@
-.App {
+/* General container styling */
+.container {
+  padding: 20px;
   text-align: center;
-}
-
-.App-logo {
-  height: 40vmin;
-  pointer-events: none;
-}
-
-@media (prefers-reduced-motion: no-preference) {
-  .App-logo {
-    animation: App-logo-spin infinite 20s linear;
-  }
-}
-
-.App-header {
-  background-color: #282c34;
+  font-family: sans-serif;
+  background: #111;
+  color: #fff;
   min-height: 100vh;
   display: flex;
+  justify-content: flex-start; /* Align content to the left */
+  align-items: flex-start; /* Align content to the top */
   flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  font-size: calc(10px + 2vmin);
+  margin: 0; /* Remove any default margin */
+}
+
+/* Lobby (sign-in page) styling */
+.lobby {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start; /* Align items to the top */
+  align-items: center; /* Center the sign-in content horizontally */
+  margin-top: 10%; /* Space from the top (10% of the viewport height) */
+  width: 100%; /* Ensure it takes up the full width */
+  max-width: 500px; /* Max width to avoid stretching too wide */
+  margin-left: auto;
+  margin-right: auto; /* Center the whole lobby container */
+}
+
+.lobby input {
+  padding: 10px;
+  margin: 10px;
+  width: 200px;
+}
+
+.lobby button {
+  padding: 10px 20px;
+  background: #1d72b8;
   color: white;
+  border: none;
+  cursor: pointer;
+  font-size: 16px;
+  margin-top: 20px;
 }
 
-.App-link {
-  color: #61dafb;
+.lobby h1 {
+  font-size: 24px;
+  margin-bottom: 20px;
 }
 
-@keyframes App-logo-spin {
-  from {
-    transform: rotate(0deg);
+/* Platform Background */
+.platform {
+  background: linear-gradient(135deg, #1d2b64, #f8cdda); /* Gradient background */
+  border-radius: 20px;
+  padding: 20px;
+  box-shadow: 0px 10px 30px rgba(0, 0, 0, 0.2); /* Shadow for depth */
+  margin-top: 20px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100px;
+  overflow: hidden;
+  position: relative;
+}
+
+/* Grid styling */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); /* Responsive grid */
+  gap: 15px;
+  justify-items: center;
+  margin-top: 20px;
+  width: 100%;
+  max-width: 100%;
+}
+
+/* Tile styling with rounded corners (edges) */
+.tile {
+  position: relative;
+  width: 100px;
+  height: 100px;
+  background: white; /* White background for tiles */
+  border: 2px solid #888;
+  border-radius: 12px; /* Rounded edges */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  perspective: 1000px; /* For 3D effect */
+}
+
+/* Inner part of the tile that enables 3D effect */
+.tile-inner {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  transform-style: preserve-3d; /* Allow 3D transformations */
+  transition: transform 0.6s; /* Smooth flip transition */
+}
+
+/* Tile flip effect */
+.tile.flipped .tile-inner {
+  transform: rotateY(180deg); /* Flip the tile */
+}
+
+/* Front and back sides of the tile */
+.tile .tile-front,
+.tile .tile-back {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  backface-visibility: hidden; /* Hide back of tile when flipped */
+}
+
+.tile .tile-front {
+  background-color: white; /* White background */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border-radius: 12px; /* Rounded corners on the front */
+  box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.2); /* Shadow for depth */
+  overflow: hidden;
+}
+
+.tile .tile-back {
+  background-color: #4CAF50; /* Color when flipped (example: green) */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  transform: rotateY(180deg); /* Flip the back */
+  border-radius: 12px; /* Rounded corners on the back */
+  box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.2); /* Same shadow as front */
+}
+
+/* Hover effect for tile */
+.tile:hover .tile-inner {
+  transform: scale(1.05); /* Slightly scale up when hovered to give a 3D effect */
+}
+
+/* Adding some more depth with hover */
+.tile:hover {
+  transform: translateY(-10px); /* Move the tile upwards slightly */
+  transition: transform 0.2s ease-in-out; /* Smooth transition */
+}
+
+/* Styling the image inside the tile */
+.tile-front img {
+  width: 80%;
+  height: 80%;
+  object-fit: contain; /* Ensure image stays within bounds of tile */
+  margin: auto;
+  display: block;
+  border-radius: 8px; /* Optional: add some border radius for the image */
+}
+
+/* Fade-out transition for matched tiles */
+@keyframes fadeOut {
+  0% {
+    opacity: 1;
+    transform: scale(1);
   }
-  to {
-    transform: rotate(360deg);
+  50% {
+    opacity: 0.5;
+    transform: scale(0.9); /* Slight shrink */
+  }
+  100% {
+    opacity: 0;
+    transform: scale(0); /* Fully hidden */
+  }
+}
+
+/* Apply fade-out animation */
+.tile.matched {
+  animation: fadeOut 0.6s ease-out forwards; /* Apply fade-out animation */
+  pointer-events: none; /* Disable click events on matched tiles */
+}
+
+/* Scoreboard and status section */
+.scoreboard {
+  margin-top: 20px;
+  text-align: center;
+  font-size: 18px;
+}
+
+.game-info {
+  text-align: center;
+  margin-top: 20px;
+}
+
+/* Centered Title */
+.game-title {
+  text-align: center; /* Center the title */
+  margin-top: 20px;
+  font-size: 30px; /* Larger font for the title */
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .grid {
+    grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); /* Make tiles smaller for smaller screens */
+  }
+
+  .lobby input,
+  .lobby button {
+    width: 180px; /* Slightly smaller input fields and buttons */
+  }
+
+  .game-title {
+    font-size: 26px; /* Adjust font size on tablets */
+  }
+}
+
+@media (max-width: 480px) {
+  .grid {
+    grid-template-columns: repeat(auto-fill, minmax(60px, 1fr)); /* Adjust for very small screens */
+  }
+
+  .lobby input,
+  .lobby button {
+    width: 150px; /* Even smaller inputs and buttons */
+  }
+
+  .game-title {
+    font-size: 22px; /* Further reduce font size on small screens */
+  }
+}
+
+@media (max-width: 1024px) {
+  .container {
+    padding: 10px;
+  }
+
+  .tile {
+    width: 90px; /* Slightly smaller tiles on tablet-sized screens */
+    height: 90px;
+  }
+}
+
+@media (max-width: 768px) {
+  .container {
+    padding: 5px;
+  }
+
+  .tile {
+    width: 80px; /* Smaller tiles for tablets */
+    height: 80px;
+  }
+}
+
+@media (max-width: 480px) {
+  .container {
+    padding: 5px;
+  }
+
+  .tile {
+    width: 70px; /* Even smaller tiles for smaller screens */
+    height: 70px;
   }
 }
